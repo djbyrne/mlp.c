@@ -67,6 +67,7 @@ The **XOR problem** is used as the example dataset. This is a classical binary c
      ![\delta_{\text{hidden}} = (\delta_{\text{output}} \cdot W_{\text{output}}) \times \sigma'(z_{\text{hidden}})](https://latex.codecogs.com/svg.latex?%5Cdelta_%7B%5Ctext%7Bhidden%7D%7D%20%3D%20%28%5Cdelta_%7B%5Ctext%7Boutput%7D%7D%20%5Ccdot%20W_%7B%5Ctext%7Boutput%7D%7D%29%20%5Ctimes%20%5Csigma%27%28z_%7B%5Ctext%7Bhidden%7D%7D%29)
    
    - **Step 3**: Update the weights and biases using gradient descent:
+
      ![W_{\text{new}} = W_{\text{old}} - \alpha \cdot \delta \cdot x](https://latex.codecogs.com/svg.latex?W_%7B%5Ctext%7Bnew%7D%7D%20%3D%20W_%7B%5Ctext%7Bold%7D%7D%20-%20%5Calpha%20%5Ccdot%20%5Cdelta%20%5Ccdot%20x)
      
      ![b_{\text{new}} = b_{\text{old}} - \alpha \cdot \delta](https://latex.codecogs.com/svg.latex?b_%7B%5Ctext%7Bnew%7D%7D%20%3D%20b_%7B%5Ctext%7Bold%7D%7D%20-%20%5Calpha%20%5Ccdot%20%5Cdelta)
@@ -138,4 +139,7 @@ Input: 1.0, 1.0, Expected Output: 0.0, Predicted Output: 0.010
 ```
 
 ## References
-TODO
+![Hidden Layer By Hand](https://aibyhand.substack.com/p/w8-hidden-layer)
+![Backpropagation By Hand](https://aibyhand.substack.com/p/7-can-you-calculate-a-transformer?utm_source=publication-search)
+![Backpropagation](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+![Neural Networks From Scratch - Python](https://www.kaggle.com/code/ancientaxe/simple-neural-network-from-scratch-in-python)
