@@ -3,16 +3,32 @@
 #include <math.h>
 #include <time.h>
 
-#define NUM_INPUTS 2      // Number of input neurons
-#define NUM_HIDDEN 4      // Number of hidden neurons
-#define NUM_OUTPUTS 1     // Number of output neurons
-#define NUM_SAMPLES 4     // Number of training samples
+#define NUM_INPUTS 2       // Number of input neurons
+#define NUM_HIDDEN 4       // Number of hidden neurons
+#define NUM_OUTPUTS 1      // Number of output neurons
+#define NUM_SAMPLES 4      // Number of training samples
 #define LEARNING_RATE 0.01 // Learning rate
-#define EPOCHS 1000000    // Number of training epochs
+#define EPOCHS 1000000     // Number of training epochs
 
-// Activation function and its derivative
-double sigmoid(double x);
-double sigmoid_derivative(double x);
+// Sigmoid activation function and its derivative
+double sigmoid(double x) {
+    return 1.0 / (1.0 + exp(-x));
+}
+
+double sigmoid_derivative(double x) {
+    return x * (1.0 - x);
+}
+
+// ReLU activation function
+double relu(double x) {
+    return x > 0 ? x : 0;
+}
+
+// Derivative of ReLU activation function
+double relu_derivative(double x) {
+    return x > 0 ? 1 : 0;
+}
+
 
 // Data structure for a layer in the neural network
 typedef struct {
@@ -36,22 +52,12 @@ void initialize_network(NeuralNetwork *nn);
 void free_network(NeuralNetwork *nn);
 
 void forward_propagation(LinearLayer *layer, double inputs[], double outputs[]);
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]);
+void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
+                     double expected_outputs[], double delta_hidden[], double delta_output[]);
 
 void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[]);
 void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outputs[][NUM_OUTPUTS]);
 void test(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outputs[][NUM_OUTPUTS]);
-
-
-// Activation function
-double sigmoid(double x) {
-    return 1.0 / (1.0 + exp(-x));
-}
-
-// Derivative of activation function
-double sigmoid_derivative(double x) {
-    return x * (1.0 - x);
-}
 
 // Initialize a layer
 void initialize_layer(LinearLayer *layer, int input_size, int output_size) {
@@ -88,6 +94,7 @@ void free_layer(LinearLayer *layer) {
 // Initialize the neural network
 void initialize_network(NeuralNetwork *nn) {
     srand(time(NULL));
+    // Initialize layers
     initialize_layer(&nn->hidden_layer, NUM_INPUTS, NUM_HIDDEN);
     initialize_layer(&nn->output_layer, NUM_HIDDEN, NUM_OUTPUTS);
 }
@@ -101,23 +108,24 @@ void free_network(NeuralNetwork *nn) {
 // Forward propagation for a single layer
 void forward_propagation(LinearLayer *layer, double inputs[], double outputs[]) {
     for (int i = 0; i < layer->output_size; i++) {
+        // Calculate the weighted sum of inputs
         double activation = layer->biases[i];
         for (int j = 0; j < layer->input_size; j++) {
             activation += inputs[j] * layer->weights[j][i];
         }
+        // Apply the activation function
         outputs[i] = sigmoid(activation);
     }
 }
 
-// Backpropagation
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]) {
-    // Calculate output layer error and delta
+void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
+                     double errors[], double *delta_hidden, double *delta_output) {
+    // Output layer delta
     for (int i = 0; i < nn->output_layer.output_size; i++) {
-        double error = expected_outputs[i] - output_outputs[i];
-        delta_output[i] = error * sigmoid_derivative(output_outputs[i]);
+        delta_output[i] = errors[i] * sigmoid_derivative(output_outputs[i]);
     }
 
-    // Calculate hidden layer error and delta
+    // Hidden layer delta
     for (int i = 0; i < nn->hidden_layer.output_size; i++) {
         double error = 0.0;
         for (int j = 0; j < nn->output_layer.output_size; j++) {
@@ -125,10 +133,6 @@ void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[]
         }
         delta_hidden[i] = error * sigmoid_derivative(hidden_outputs[i]);
     }
-
-    // Update weights and biases
-    update_weights_biases(&nn->output_layer, hidden_outputs, delta_output);
-    update_weights_biases(&nn->hidden_layer, inputs, delta_hidden);
 }
 
 // Update weights and biases for a layer
@@ -148,8 +152,13 @@ void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[])
 
 // Training function
 void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outputs[][NUM_OUTPUTS]) {
+    // Allocate memory for deltas
+    double *delta_hidden = (double *)malloc(NUM_HIDDEN * sizeof(double));
+    double *delta_output = (double *)malloc(NUM_OUTPUTS * sizeof(double));
+    double errors[NUM_OUTPUTS];
+
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
-        double total_error = 0.0;
+        double loss = 0.0;
         for (int sample = 0; sample < NUM_SAMPLES; sample++) {
             double hidden_outputs[NUM_HIDDEN];
             double output_outputs[NUM_OUTPUTS];
@@ -158,23 +167,31 @@ void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outpu
             forward_propagation(&nn->hidden_layer, inputs[sample], hidden_outputs);
             forward_propagation(&nn->output_layer, hidden_outputs, output_outputs);
 
-            // Calculate error
+            // Loss function: Mean Squared Error
             for (int i = 0; i < NUM_OUTPUTS; i++) {
-                double error = expected_outputs[sample][i] - output_outputs[i];
-                total_error += error * error;
+                errors[i] = expected_outputs[sample][i] - output_outputs[i];
+                loss += errors[i] * errors[i];
             }
+            loss /= NUM_OUTPUTS;
 
-            // Backpropagation
-            double delta_hidden[NUM_HIDDEN];
-            double delta_output[NUM_OUTPUTS];
-            backpropagation(nn, inputs[sample], hidden_outputs, output_outputs, expected_outputs[sample], delta_hidden, delta_output);
+            // Backpropagation (compute deltas)
+            backpropagation(nn, inputs[sample], hidden_outputs, output_outputs,
+                            errors, delta_hidden, delta_output);
+
+            // Update weights and biases separately
+            update_weights_biases(&nn->output_layer, hidden_outputs, delta_output);
+            update_weights_biases(&nn->hidden_layer, inputs[sample], delta_hidden);
         }
 
         // Optional: Print error every 1000 epochs
         if ((epoch + 1) % 1000 == 0) {
-            printf("Epoch %d, Error: %f\n", epoch + 1, total_error);
+            printf("Epoch %d, Error: %f\n", epoch + 1, loss);
         }
     }
+
+    // Free allocated memory for deltas
+    free(delta_hidden);
+    free(delta_output);
 }
 
 // Testing function
