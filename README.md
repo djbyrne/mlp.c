@@ -139,7 +139,7 @@ Input: 1.0, 1.0, Expected Output: 0.0, Predicted Output: 0.010
 ```
 
 ## References
-![Hidden Layer By Hand](https://aibyhand.substack.com/p/w8-hidden-layer)
-![Backpropagation By Hand](https://aibyhand.substack.com/p/7-can-you-calculate-a-transformer?utm_source=publication-search)
-![Backpropagation](https://www.youtube.com/watch?v=tIeHLnjs5U8)
-![Neural Networks From Scratch - Python](https://www.kaggle.com/code/ancientaxe/simple-neural-network-from-scratch-in-python)
+- ![Hidden Layer By Hand](https://aibyhand.substack.com/p/w8-hidden-layer)
+- ![Backpropagation By Hand](https://aibyhand.substack.com/p/7-can-you-calculate-a-transformer?utm_source=publication-search)
+- ![Backpropagation](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+- ![Neural Networks From Scratch - Python](https://www.kaggle.com/code/ancientaxe/simple-neural-network-from-scratch-in-python)
