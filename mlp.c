@@ -19,16 +19,6 @@ double sigmoid_derivative(double x) {
     return x * (1.0 - x);
 }
 
-// ReLU activation function
-double relu(double x) {
-    return x > 0 ? x : 0;
-}
-
-// Derivative of ReLU activation function
-double relu_derivative(double x) {
-    return x > 0 ? 1 : 0;
-}
-
 
 // Data structure for a layer in the neural network
 typedef struct {
@@ -115,6 +105,7 @@ void forward_propagation(LinearLayer *layer, double inputs[], double outputs[]) 
         }
         // Apply the activation function
         outputs[i] = sigmoid(activation);
+
     }
 }
 
@@ -159,6 +150,7 @@ void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outpu
 
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         double loss = 0.0;
+        double total_errors = 0.0;
         for (int sample = 0; sample < NUM_SAMPLES; sample++) {
             double hidden_outputs[NUM_HIDDEN];
             double output_outputs[NUM_OUTPUTS];
@@ -170,20 +162,20 @@ void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outpu
             // Loss function: Mean Squared Error
             for (int i = 0; i < NUM_OUTPUTS; i++) {
                 errors[i] = expected_outputs[sample][i] - output_outputs[i];
-                loss += errors[i] * errors[i];
+                total_errors += errors[i] * errors[i];
             }
-            loss /= NUM_OUTPUTS;
 
             // Backpropagation (compute deltas)
             backpropagation(nn, inputs[sample], hidden_outputs, output_outputs,
                             errors, delta_hidden, delta_output);
 
-            // Update weights and biases separately
+            // Update weights and biases
             update_weights_biases(&nn->output_layer, hidden_outputs, delta_output);
             update_weights_biases(&nn->hidden_layer, inputs[sample], delta_hidden);
         }
 
         // Optional: Print error every 1000 epochs
+        loss = total_errors / NUM_SAMPLES;
         if ((epoch + 1) % 1000 == 0) {
             printf("Epoch %d, Error: %f\n", epoch + 1, loss);
         }
@@ -214,6 +206,9 @@ void test(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_output
 
 // Main function
 int main() {
+    // seed the random number generator
+    srand(42);
+
     // Training dataset for XOR problem
     double inputs[NUM_SAMPLES][NUM_INPUTS] = {
         {0.0, 0.0},

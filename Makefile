@@ -1,2 +1,2 @@
-build_mlp:
+compile:
 	gcc -o mlp mlp.c -lm
