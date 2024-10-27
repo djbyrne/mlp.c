@@ -246,7 +246,16 @@ void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], doubl
         for (int j = 0; j < NUM_OUTPUTS; j++) {
             error += delta_output[j] * nn->output_layer.weights[i][j];
         }
-        delta_hidden[i] = error * relu_derivative(hidden_outputs[i]);
+        
+        // check the activation
+        double activation_derivative = 0.0;
+        if (nn->hidden_layer.activation == SIGMOID){
+             activation_derivative = sigmoid_derivative(hidden_outputs[i]);
+        }
+        else{
+            activation_derivative = relu_derivative(hidden_outputs[i]);
+        } 
+        delta_hidden[i] = error * activation_derivative;
     }
 
     // Update weights and biases
