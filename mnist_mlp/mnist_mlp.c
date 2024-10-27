@@ -15,11 +15,6 @@
 #define EPOCHS 10            // Number of training epochs
 #define BATCH_SIZE 64        // Mini-batch size
 
-// Activation functions
-double sigmoid(double x);
-double sigmoid_derivative(double x);
-void softmax(double inputs[], int size, double outputs[]);
-
 // Activation Types
 typedef enum { SIGMOID, RELU, SOFTMAX } ActivationType;
 
@@ -38,20 +33,29 @@ typedef struct {
 } NeuralNetwork;
 
 
-
-// Function prototypes
+// Layer prototypes
 void initialize_layer(LinearLayer *layer, int input_size, int output_size, ActivationType activation);
 void free_layer(LinearLayer *layer);
 void initialize_network(NeuralNetwork *nn);
 void free_network(NeuralNetwork *nn);
 void linear_layer_forward(LinearLayer *layer, double inputs[], double outputs[]);
+
+// Activation function prototypes
+double sigmoid(double x);
+double sigmoid_derivative(double x);
+double relu(double x);
+double relu_derivative(double x);
+void softmax(double inputs[], int size, double outputs[]);
+
+// Neural network prototypes
 void forward(NeuralNetwork *nn, double **inputs, int idx, double hidden_outputs[128], double output_outputs[10]);
 void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]);
 double cross_entropy_loss(double predicted[], double expected[], int num_outputs);
 void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[]);
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples);
-void forward(NeuralNetwork *nn, double **inputs, int idx, double hidden_outputs[128], double output_outputs[10]);
 void test(NeuralNetwork *nn, double **inputs, int *labels, int num_samples);
+
+// Data prototypes
 void read_mnist_images(const char *filename, double **images, int num_images);
 void read_mnist_labels(const char *filename, int *labels, int num_labels);
 int reverse_int(int i);
@@ -246,7 +250,7 @@ void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], doubl
         for (int j = 0; j < NUM_OUTPUTS; j++) {
             error += delta_output[j] * nn->output_layer.weights[i][j];
         }
-        
+
         // check the activation
         double activation_derivative = 0.0;
         if (nn->hidden_layer.activation == SIGMOID){
