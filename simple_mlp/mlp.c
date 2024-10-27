@@ -42,7 +42,7 @@ void initialize_network(NeuralNetwork *nn);
 void free_network(NeuralNetwork *nn);
 
 void forward_propagation(LinearLayer *layer, double inputs[], double outputs[]);
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
+void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
                      double expected_outputs[], double delta_hidden[], double delta_output[]);
 
 void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[]);
@@ -109,7 +109,7 @@ void forward_propagation(LinearLayer *layer, double inputs[], double outputs[]) 
     }
 }
 
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
+void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[],
                      double errors[], double *delta_hidden, double *delta_output) {
     // Output layer delta
     for (int i = 0; i < nn->output_layer.output_size; i++) {
@@ -166,7 +166,7 @@ void train(NeuralNetwork *nn, double inputs[][NUM_INPUTS], double expected_outpu
             }
 
             // Backpropagation (compute deltas)
-            backpropagation(nn, inputs[sample], hidden_outputs, output_outputs,
+            backward(nn, inputs[sample], hidden_outputs, output_outputs,
                             errors, delta_hidden, delta_output);
 
             // Update weights and biases

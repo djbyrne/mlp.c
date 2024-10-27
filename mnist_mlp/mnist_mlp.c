@@ -20,12 +20,16 @@ double sigmoid(double x);
 double sigmoid_derivative(double x);
 void softmax(double inputs[], int size, double outputs[]);
 
+// Activation Types
+typedef enum { SIGMOID, RELU, SOFTMAX } ActivationType;
+
 // Data structures
 typedef struct {
     int input_size;
     int output_size;
     double **weights;
     double *biases;
+    ActivationType activation;
 } LinearLayer;
 
 typedef struct {
@@ -33,15 +37,20 @@ typedef struct {
     LinearLayer output_layer;
 } NeuralNetwork;
 
+
+
 // Function prototypes
-void initialize_layer(LinearLayer *layer, int input_size, int output_size);
+void initialize_layer(LinearLayer *layer, int input_size, int output_size, ActivationType activation);
 void free_layer(LinearLayer *layer);
 void initialize_network(NeuralNetwork *nn);
 void free_network(NeuralNetwork *nn);
-void forward_propagation(LinearLayer *layer, double inputs[], double outputs[], const char *activation);
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]);
+void linear_layer_forward(LinearLayer *layer, double inputs[], double outputs[]);
+void forward(NeuralNetwork *nn, double **inputs, int idx, double hidden_outputs[128], double output_outputs[10]);
+void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]);
+double cross_entropy_loss(double predicted[], double expected[], int num_outputs);
 void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[]);
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples);
+void forward(NeuralNetwork *nn, double **inputs, int idx, double hidden_outputs[128], double output_outputs[10]);
 void test(NeuralNetwork *nn, double **inputs, int *labels, int num_samples);
 void read_mnist_images(const char *filename, double **images, int num_images);
 void read_mnist_labels(const char *filename, int *labels, int num_labels);
@@ -105,26 +114,44 @@ double sigmoid_derivative(double x) {
     return x * (1.0 - x);
 }
 
+// relu activation function
+double relu(double x) {
+    return x > 0 ? x : 0;
+}
+
+// Derivative of relu activation function
+double relu_derivative(double x) {
+    return x > 0 ? 1 : 0;
+}
+
 // Softmax function
 void softmax(double inputs[], int size, double outputs[]) {
+    // softmax as defined here: https://en.wikipedia.org/wiki/Softmax_function
+
+    // Find the maximum value across all input values
     double max = inputs[0];
     for (int i = 1; i < size; i++) {
         if (inputs[i] > max) max = inputs[i];
     }
+
+    // Compute the exponentials of the input values
     double sum = 0.0;
     for (int i = 0; i < size; i++) {
         outputs[i] = exp(inputs[i] - max);
         sum += outputs[i];
     }
+
+    // Normalize the output values
     for (int i = 0; i < size; i++) {
         outputs[i] /= sum;
     }
 }
 
 // Initialize a layer
-void initialize_layer(LinearLayer *layer, int input_size, int output_size) {
+void initialize_layer(LinearLayer *layer, int input_size, int output_size, ActivationType activation) {
     layer->input_size = input_size;
     layer->output_size = output_size;
+    layer->activation = activation;
 
     // Allocate memory for weights
     layer->weights = (double **)malloc(input_size * sizeof(double *));
@@ -135,13 +162,14 @@ void initialize_layer(LinearLayer *layer, int input_size, int output_size) {
     // Allocate memory for biases
     layer->biases = (double *)malloc(output_size * sizeof(double));
 
-    // Initialize weights and biases with random values
+    // Xavier Initialization
+    double limit = sqrt(6.0 / (input_size + output_size));
     for (int i = 0; i < input_size; i++)
         for (int j = 0; j < output_size; j++)
-            layer->weights[i][j] = ((double)rand() / RAND_MAX) - 0.5;
+            layer->weights[i][j] = ((double)rand() / RAND_MAX) * 2 * limit - limit;
 
     for (int i = 0; i < output_size; i++)
-        layer->biases[i] = ((double)rand() / RAND_MAX) - 0.5;
+        layer->biases[i] = 0.0;
 }
 
 // Free memory allocated for a layer
@@ -156,8 +184,8 @@ void free_layer(LinearLayer *layer) {
 // Initialize the neural network
 void initialize_network(NeuralNetwork *nn) {
     srand(time(NULL));
-    initialize_layer(&nn->hidden_layer, NUM_INPUTS, NUM_HIDDEN);
-    initialize_layer(&nn->output_layer, NUM_HIDDEN, NUM_OUTPUTS);
+    initialize_layer(&nn->hidden_layer, NUM_INPUTS, NUM_HIDDEN, RELU);
+    initialize_layer(&nn->output_layer, NUM_HIDDEN, NUM_OUTPUTS, SOFTMAX);
 }
 
 // Free memory allocated for the neural network
@@ -167,31 +195,49 @@ void free_network(NeuralNetwork *nn) {
 }
 
 // Forward propagation for a single layer
-void forward_propagation(LinearLayer *layer, double inputs[], double outputs[], const char *activation) {
-    // Compute linear activations
+void linear_layer_forward(LinearLayer *layer, double inputs[], double outputs[]) {
+    // For each neuron in the layer compute the weighted sum of inputs and add the bias to the activation
     for (int i = 0; i < layer->output_size; i++) {
         double activation_sum = layer->biases[i];
         for (int j = 0; j < layer->input_size; j++) {
+            // z = W * x + b^{(1)}
             activation_sum += inputs[j] * layer->weights[j][i];
         }
         outputs[i] = activation_sum; // Pre-activation value
     }
 
     // Apply activation function
-    if (strcmp(activation, "sigmoid") == 0) {
-        for (int i = 0; i < layer->output_size; i++) {
-            outputs[i] = sigmoid(outputs[i]);
-        }
-    } else if (strcmp(activation, "softmax") == 0) {
-        softmax(outputs, layer->output_size, outputs);
+    switch (layer->activation) {
+        case SIGMOID:
+            for (int i = 0; i < layer->output_size; i++) {
+                outputs[i] = sigmoid(outputs[i]);
+            }
+            break;
+        case RELU:
+            for (int i = 0; i < layer->output_size; i++) {
+                outputs[i] = relu(outputs[i]);
+            }
+            break;
+        case SOFTMAX:
+            softmax(outputs, layer->output_size, outputs);
+            break;
     }
 }
 
+void forward(NeuralNetwork *nn, double **inputs, int idx, double hidden_outputs[128], double output_outputs[10])
+{
+    // defines the network forward pass
+    linear_layer_forward(&nn->hidden_layer, inputs[idx], hidden_outputs);
+    linear_layer_forward(&nn->output_layer, hidden_outputs, output_outputs);
+}
+
+
 // Backpropagation
-void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]) {
+void backward(NeuralNetwork *nn, double inputs[], double hidden_outputs[], double output_outputs[], double expected_outputs[], double delta_hidden[], double delta_output[]) {
     // Output layer delta
     for (int i = 0; i < NUM_OUTPUTS; i++) {
-        delta_output[i] = output_outputs[i] - expected_outputs[i]; // For softmax and cross-entropy
+        // For softmax and cross-entropy
+        delta_output[i] = output_outputs[i] - expected_outputs[i]; 
     }
 
     // Hidden layer delta
@@ -200,7 +246,7 @@ void backpropagation(NeuralNetwork *nn, double inputs[], double hidden_outputs[]
         for (int j = 0; j < NUM_OUTPUTS; j++) {
             error += delta_output[j] * nn->output_layer.weights[i][j];
         }
-        delta_hidden[i] = error * sigmoid_derivative(hidden_outputs[i]);
+        delta_hidden[i] = error * relu_derivative(hidden_outputs[i]);
     }
 
     // Update weights and biases
@@ -223,6 +269,17 @@ void update_weights_biases(LinearLayer *layer, double inputs[], double deltas[])
     }
 }
 
+// Cross-Entropy Loss Function
+double cross_entropy_loss(double predicted[], double expected[], int num_outputs) {
+    double loss = 0.0;
+    for (int i = 0; i < num_outputs; i++) {
+        // Add a small epsilon to prevent log(0)
+        loss -= expected[i] * log(predicted[i] + 1e-9);
+    }
+
+    return loss;
+}
+
 // Training function
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
@@ -242,6 +299,7 @@ void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
             labels[j] = temp_label;
         }
 
+        // Mini-batch training
         for (int batch_start = 0; batch_start < num_samples; batch_start += BATCH_SIZE) {
             int batch_end = batch_start + BATCH_SIZE;
             if (batch_end > num_samples) batch_end = num_samples;
@@ -255,18 +313,15 @@ void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
                 one_hot_encode(labels[idx], expected_output, NUM_OUTPUTS);
 
                 // Forward propagation
-                forward_propagation(&nn->hidden_layer, inputs[idx], hidden_outputs, "sigmoid");
-                forward_propagation(&nn->output_layer, hidden_outputs, output_outputs, "softmax");
+                forward(nn, inputs, idx, hidden_outputs, output_outputs);
 
-                // Calculate loss
-                for (int i = 0; i < NUM_OUTPUTS; i++) {
-                    total_loss -= expected_output[i] * log(output_outputs[i] + 1e-9); // Add small value to prevent log(0)
-                }
+                // Cross Entropy Loss
+                total_loss += cross_entropy_loss(output_outputs, expected_output, NUM_OUTPUTS);
 
                 // Backpropagation
                 double delta_hidden[NUM_HIDDEN];
                 double delta_output[NUM_OUTPUTS];
-                backpropagation(nn, inputs[idx], hidden_outputs, output_outputs, expected_output, delta_hidden, delta_output);
+                backward(nn, inputs[idx], hidden_outputs, output_outputs, expected_output, delta_hidden, delta_output);
             }
         }
 
@@ -283,8 +338,8 @@ void test(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
         double output_outputs[NUM_OUTPUTS];
 
         // Forward propagation
-        forward_propagation(&nn->hidden_layer, inputs[idx], hidden_outputs, "sigmoid");
-        forward_propagation(&nn->output_layer, hidden_outputs, output_outputs, "softmax");
+        linear_layer_forward(&nn->hidden_layer, inputs[idx], hidden_outputs);
+        linear_layer_forward(&nn->output_layer, hidden_outputs, output_outputs);
 
         // Get the predicted label
         int predicted_label = 0;
