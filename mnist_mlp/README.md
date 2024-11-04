@@ -6,14 +6,60 @@ This project implements a simple Multi-Layer Perceptron (MLP) neural network in 
 
 ## Table of Contents
 
-1. [Overview](#introduction-to-mlp)
-2. [Initialisation](#backpropagation-explanation)
-3. [Forward](#code-structure)
-4. [Backward](#setup-and-usage)
-5. [Benchmarking](#references)
-6. [References](#references)
+1. [Setup and Usage](#setup-and-usage)
+2. [Overview](#overview)
+3. [Initialisation](#initialisation)
+4. [Forward](#forward)
+5. [Backward](#backward)
+6. [Benchmarking](#benchmarking)
+7. [References](#references)
 
 ---
+
+## Setup and Usage
+
+### **Prerequisites**
+- This code is written in C and requires a basic C compiler to run.
+
+### **Compilation**
+
+Use the following command to compile the program:
+
+```bash
+gcc -o mnist_mlp mnist_mlp.c -lm
+```
+
+There is also a Makefile for your convenience allowing you to compile with 
+
+```bash
+make build
+```
+
+### **Running**
+
+```bash
+make run
+
+# or
+
+./mlp
+```
+
+This should give the expected output 
+
+```
+Epoch 1, Loss: 0.215873 Time: 18.985174
+Epoch 2, Loss: 0.099304 Time: 18.902700
+Epoch 3, Loss: 0.070608 Time: 19.613358
+Epoch 4, Loss: 0.055073 Time: 19.571342
+Epoch 5, Loss: 0.043553 Time: 19.628385
+Epoch 6, Loss: 0.033625 Time: 19.702312
+Epoch 7, Loss: 0.028577 Time: 20.191154
+Epoch 8, Loss: 0.021216 Time: 20.124211
+Epoch 9, Loss: 0.016430 Time: 20.089050
+Epoch 10, Loss: 0.012972 Time: 20.770779
+Test Accuracy: 97.76%
+```
 
 ## Overview
 
@@ -23,6 +69,13 @@ A **Multi-Layer Perceptron (MLP)** is a type of feedforward neural network consi
 - **Output Layer:** 10 neurons with a softmax activation function (representing digits 0-9).
 
 ## Initialisation
+For this network we use Xavier initialisation, which is a method for setting the initial values of the weights in a neural network. This method sets the initial weights to random values drawn from a normal distribution with a mean of 0 and a standard deviation of sqrt(1/input_size), where input_size is the number of neurons in the previous layer, and the bias set to 0. This helps to keep the scale of the gradients roughly the same in all layers, which can help to prevent the gradients from exploding or vanishing during training.
+
+```python
+# Xavier Initialisation
+W1 = np.random.randn(hidden_size, input_size) * np.sqrt(1/input_size)
+b1 = np.zeros((hidden_size, 1))
+``` 
 
 ## Forward
 In forward propagation, the network computes the output for a given input by passing data through the hidden layer and then the output layer.
@@ -30,32 +83,34 @@ In forward propagation, the network computes the output for a given input by pas
 For each layer:
 
 - The weighted sum of inputs is calculated.
-- An activation function is applied to produce the output.
+- An activation function is applied to produce the output, this allows us to handle more complex, non-linear problems.
 - The output is passed to the next layer as input.
 
+```python
+#Forward Pass
 
-Hidden Layer Computation:
-- Compute the weighted sum of inputs plus biases. W is our weight matrix, b is our bias vector, and x is our input vector. This will give us our activation vector z, of size 128.
+# 1. Compute the first linear transformation
+z1 = W1 * x + b1
 
-```math
-z^{(1)} = W^{(1)} x + b^{(1)}
+# 2. Apply ReLU activation function
+a1 = ReLU(z1)
+
+# 3. Compute the second linear transformation
+z2 = W2 * a1 + b2
+
+# 4. Apply Softmax activation function to get predictions
+y_pred = softmax(z2)
+
+# 5. Compute Cross-Entropy Loss
+loss = cross_entropy(y_pred, y_true)
 ```
 
-- Activation: Apply the relu activation function to each element, taking the max of 0 and the input.
-```math
-a^{(1)} = \max(0, z^{(1)})
-```
-
-Output Layer Computation:
-- Compute the weighted sum of inputs plus biases.
-```math
-z^{(2)} = W^{(2)} a^{(1)} + b^{(2)}
-```
-
-- Activation: Apply the softmax function to get probabilities of each class (0-9).
-```math
-a^{(2)} = \text{softmax}(z^{(2)})
-```
+- W1, b1: Weights and biases for the first layer.
+- W2, b2: Weights and biases for the second layer.
+- ReLU(z): Activation function defined as ReLU(z) = max(0, z).
+- softmax(z): Converts logits to probabilities.
+- y_true: True labels (one-hot encoded).
+- cross_entropy(p, q): Computes the loss between predicted probabilities p and true labels q.
 
 ## Backward
 
@@ -80,3 +135,89 @@ We take the negative log of the predicted probability for the true class because
 This means that the loss will be high when the predicted probability for the correct class is low and low when the predicted probability is high.
 
 ### Gradients
+
+```python
+# 6. Compute the gradient of loss with respect to z2 (pre-activation of output layer)
+d_z2 = y_pred - y_true
+
+# 7. Compute gradients for W2 and b2
+d_W2 = d_z2 * a1^T
+d_b2 = d_z2
+
+# 8. Backpropagate through the second linear layer
+d+a1 = W2^T * d_z2
+
+# 9. Compute the gradient of ReLU activation
+d_z1 = d_a1 * (1 if z > 0 else 0)
+
+# 10. Compute gradients for W1 and b1
+d_W1 = d_z1 * x^T
+d_b1 = d_z1
+```
+
+- ^T: Denotes the transpose of a matrix.
+- dz2: Gradient of loss with respect to z2.
+- dW2, db2: Gradients of loss with respect to W2 and b2.
+- da1: Gradient of loss with respect to activations a1.
+- dz1: Gradient of loss with respect to z1.
+- dW1, db1: Gradients of loss with respect to W1 and b1.
+
+## Data Processing
+
+The MNIST dataset consists of 60,000 training images and 10,000 test images. Each image is a 28x28 pixel grayscale image of a handwritten digit (0-9). The images are stored as 1D arrays of length 784 (28x28), with pixel values ranging from 0 to 255. We use the [Kaggle](https://www.kaggle.com/api/v1/datasets/download/hojjatk/mnist-dataset) verion of the dataset which is already split into training and test sets.
+
+Data images are read in and processed using `read_mnist_images` function:
+```c
+void read_mnist_images(const char *filename, double **images, int num_images)
+```
+
+**Data Images Processing Steps:**
+1.	Open the File: 
+    - The image file is opened in binary read mode.
+2.	Read Header Information:
+	- Magic Number: Used to identify the file type.
+	- Number of Images: Total images in the file.
+	- Rows and Columns: Dimensions of each image (28x28 pixels).
+3.	Read Image Data:
+	- Each image is read pixel by pixel.
+	- Pixel values range from 0 to 255.
+	- Normalization: Pixel values are normalized to the range [0, 1] by dividing by 255.0.
+	- The normalized pixel values are stored in a dynamically allocated array for each image.
+4.	Close the File: 
+    - After reading all images, the file is closed.
+
+The labels are read using the `read_mnist_labels` function:
+
+```c
+void read_mnist_labels(const char *filename, int *labels, int num_labels)
+```
+
+**Data Labels Processing Steps:**
+1.	Open the File: 
+    - The label file is opened in binary read mode.
+2.	Read Header Information:
+    - Magic Number: Used to identify the file type.
+    - Number of Labels: Total labels in the file.
+3.	Read Label Data:
+    - Each label is read as an unsigned byte and converted to an integer.
+	- The labels range from 0 to 9, representing the digits.
+4.	Close the File:
+    - After reading all labels, the file is closed.
+
+**Data Structure:**
+- Images: Stored as a 2D array where each row represents an image and each column represents a pixel.
+- Labels: Stored as a 1D array where each element represents the label of the corresponding image.
+- One-Hot Encoding: Labels are converted to one-hot encoded vectors for training the network.
+
+## Benchmarking
+
+Training loss is logged throughout training and saved to a `training_loss.txt` file which can be used to plot results post training. This is shown in the [training_plots](./training_plots.ipynb) notebook.
+
+![Training Loss](./mnist_training_loss.png)
+
+## References
+- [Hidden Layer By Hand](https://aibyhand.substack.com/p/w8-hidden-layer)
+- [Backpropagation By Hand](https://aibyhand.substack.com/p/7-can-you-calculate-a-transformer?utm_source=publication-search)
+- [Backpropagation](https://www.youtube.com/watch?v=tIeHLnjs5U8)
+- [Neural Networks From Scratch - Python](https://www.kaggle.com/code/ancientaxe/simple-neural-network-from-scratch-in-python)
+- [Andrej Karpathy - MLP From Scratch](https://www.youtube.com/watch?v=TCH_1BHY58I&t=1685s)

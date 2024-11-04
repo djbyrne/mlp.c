@@ -295,16 +295,8 @@ double cross_entropy_loss(double predicted[], double expected[], int num_outputs
 
 // Training function
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
-    // Open file to log training loss
-    FILE *loss_file = fopen("training_loss.txt", "w");
-    if (!loss_file) {
-        printf("Could not open file for writing training loss.\n");
-        exit(1);
-    }
-
     for (int epoch = 0; epoch < EPOCHS; epoch++) {
         double total_loss = 0.0;
-        float start_time = clock();
 
         // Shuffle the dataset
         for (int i = 0; i < num_samples; i++) {
@@ -313,7 +305,7 @@ void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
             double *temp_image = inputs[i];
             inputs[i] = inputs[j];
             inputs[j] = temp_image;
-
+            
             // Swap labels
             int temp_label = labels[i];
             labels[i] = labels[j];
@@ -337,8 +329,7 @@ void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
                 forward(nn, inputs, idx, hidden_outputs, output_outputs);
 
                 // Cross Entropy Loss
-                double loss = cross_entropy_loss(output_outputs, expected_output, NUM_OUTPUTS);
-                total_loss += loss;
+                total_loss += cross_entropy_loss(output_outputs, expected_output, NUM_OUTPUTS);
 
                 // Backpropagation
                 double delta_hidden[NUM_HIDDEN];
@@ -347,14 +338,8 @@ void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
             }
         }
 
-        double end_time = clock();
-        double duration = (end_time - start_time) / CLOCKS_PER_SEC;
-        double average_loss = total_loss / num_samples;
-        printf("Epoch %d, Loss: %f Time: %f\n", epoch + 1, average_loss, duration);
-        fprintf(loss_file, "%d,%f,%f\n", epoch + 1, average_loss, duration);  // Log the metrics
+        printf("Epoch %d, Loss: %f\n", epoch + 1, total_loss / num_samples);
     }
-
-    fclose(loss_file);  // Close the loss file
 }
 
 // Testing function
