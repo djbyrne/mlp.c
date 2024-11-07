@@ -9,8 +9,8 @@
 #define NUM_INPUTS 784       // 28x28 pixels
 #define NUM_HIDDEN 128       // Number of hidden neurons
 #define NUM_OUTPUTS 10       // Digits 0-9
-#define TRAIN_SAMPLES 60000  // Number of training samples
-#define TEST_SAMPLES 10000   // Number of test samples
+#define TRAIN_SAMPLES 20000 //60000  // Number of training samples
+#define TEST_SAMPLES 5000 // 10000   // Number of test samples
 #define LEARNING_RATE 0.01   // Learning rate
 #define EPOCHS 10            // Number of training epochs
 #define BATCH_SIZE 64        // Mini-batch size
@@ -67,6 +67,7 @@ int main() {
     int *train_labels = (int *)malloc(TRAIN_SAMPLES * sizeof(int));
 
     // Read training data
+    printf("Loading training data...\n");
     read_mnist_images("train-images.idx3-ubyte", train_images, TRAIN_SAMPLES);
     read_mnist_labels("train-labels.idx1-ubyte", train_labels, TRAIN_SAMPLES);
 
@@ -75,17 +76,21 @@ int main() {
     int *test_labels = (int *)malloc(TEST_SAMPLES * sizeof(int));
 
     // Read test data
+    printf("Loading test data...\n");
     read_mnist_images("t10k-images.idx3-ubyte", test_images, TEST_SAMPLES);
     read_mnist_labels("t10k-labels.idx1-ubyte", test_labels, TEST_SAMPLES);
 
     // Initialize neural network
+    printf("Initializing neural network...\n");
     NeuralNetwork nn;
     initialize_network(&nn);
 
     // Train the neural network
+    printf("Training neural network...\n");
     train(&nn, train_images, train_labels, TRAIN_SAMPLES);
 
     // Test the neural network
+    printf("Testing neural network...\n");
     test(&nn, test_images, test_labels, TEST_SAMPLES);
 
     // Free training data
@@ -296,7 +301,7 @@ double cross_entropy_loss(double predicted[], double expected[], int num_outputs
 // Training function
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
     // Open file to log training loss
-    FILE *loss_file = fopen("training_loss.txt", "w");
+    FILE *loss_file = fopen("training_loss_c.txt", "w");
     if (!loss_file) {
         printf("Could not open file for writing training loss.\n");
         exit(1);
