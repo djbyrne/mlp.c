@@ -113,7 +113,7 @@ def backward(nn, inputs, hidden_outputs, output_outputs, expected_outputs):
 # Training Function
 def train(nn, inputs, labels):
     num_samples = len(inputs)
-    with open('training_loss_py.txt', 'w') as loss_file:
+    with open('./logs/training_loss_py.txt', 'w') as loss_file:
         for epoch in range(EPOCHS):
             total_loss = 0.0
             start_time = time.time()
@@ -149,7 +149,7 @@ def train(nn, inputs, labels):
             end_time = time.time()
             duration = end_time - start_time
             average_loss = total_loss / num_samples
-            print(f"Epoch {epoch+1}, Loss: {average_loss:.6f}, Time: {duration:.2f}s")
+            print(f"Epoch {epoch+1}, Loss: {average_loss:.4f}, Time: {duration:.2f}s")
             loss_file.write(f"{epoch+1},{average_loss},{duration}\n")
 
 # Testing Function
@@ -203,13 +203,13 @@ def read_mnist_labels(filename, num_labels):
 def main():
     # Read training data
     print("Loading training data...")
-    train_images = read_mnist_images('train-images.idx3-ubyte', TRAIN_SAMPLES)
-    train_labels = read_mnist_labels('train-labels.idx1-ubyte', TRAIN_SAMPLES)
+    train_images = read_mnist_images('./data/train-images.idx3-ubyte', TRAIN_SAMPLES)
+    train_labels = read_mnist_labels('./data/train-labels.idx1-ubyte', TRAIN_SAMPLES)
     
     # Read test data
     print("Loading test data...")
-    test_images = read_mnist_images('t10k-images.idx3-ubyte', TEST_SAMPLES)
-    test_labels = read_mnist_labels('t10k-labels.idx1-ubyte', TEST_SAMPLES)
+    test_images = read_mnist_images('./data/t10k-images.idx3-ubyte', TEST_SAMPLES)
+    test_labels = read_mnist_labels('./data/t10k-labels.idx1-ubyte', TEST_SAMPLES)
     
     # Initialize neural network
     print("Initializing neural network...")

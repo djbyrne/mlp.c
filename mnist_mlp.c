@@ -68,8 +68,8 @@ int main() {
 
     // Read training data
     printf("Loading training data...\n");
-    read_mnist_images("train-images.idx3-ubyte", train_images, TRAIN_SAMPLES);
-    read_mnist_labels("train-labels.idx1-ubyte", train_labels, TRAIN_SAMPLES);
+    read_mnist_images("./data/train-images.idx3-ubyte", train_images, TRAIN_SAMPLES);
+    read_mnist_labels("./data/train-labels.idx1-ubyte", train_labels, TRAIN_SAMPLES);
 
     // Allocate memory for test data
     double **test_images = (double **)malloc(TEST_SAMPLES * sizeof(double *));
@@ -77,8 +77,8 @@ int main() {
 
     // Read test data
     printf("Loading test data...\n");
-    read_mnist_images("t10k-images.idx3-ubyte", test_images, TEST_SAMPLES);
-    read_mnist_labels("t10k-labels.idx1-ubyte", test_labels, TEST_SAMPLES);
+    read_mnist_images("./data/t10k-images.idx3-ubyte", test_images, TEST_SAMPLES);
+    read_mnist_labels("./data/t10k-labels.idx1-ubyte", test_labels, TEST_SAMPLES);
 
     // Initialize neural network
     printf("Initializing neural network...\n");
@@ -301,7 +301,7 @@ double cross_entropy_loss(double predicted[], double expected[], int num_outputs
 // Training function
 void train(NeuralNetwork *nn, double **inputs, int *labels, int num_samples) {
     // Open file to log training loss
-    FILE *loss_file = fopen("training_loss_c.txt", "w");
+    FILE *loss_file = fopen("./logs/training_loss_c.txt", "w");
     if (!loss_file) {
         printf("Could not open file for writing training loss.\n");
         exit(1);

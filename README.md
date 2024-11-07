@@ -225,7 +225,7 @@ void read_mnist_labels(const char *filename, int *labels, int num_labels)
 
 Training loss is logged throughout training and saved to a `training_loss.txt` file which can be used to plot results post training. This is shown in the [training_plots](./training_plots.ipynb) notebook.
 
-![Training Loss](./mnist_training_loss.png)
+![Training Loss](./imgs/mnist_training_loss.png)
 
 A python version of the MLP has been provided to give speed comparison. As you can see, the python version running at ~133s per epoch is ~16.5X slower than the C version running at ~7s per epoch.
 
@@ -243,7 +243,7 @@ Testing neural network...
 Test Accuracy: 95.86%
 ```
 
-![Training Speed Comparison](./mnist_training_speed.png)
+![Training Speed Comparison](./imgs/mnist_training_speed.png)
 
 ## References
 - [Hidden Layer By Hand](https://aibyhand.substack.com/p/w8-hidden-layer)
